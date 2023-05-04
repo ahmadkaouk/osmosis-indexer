@@ -1,9 +1,13 @@
 //! An Indexer for the Osmosis Blockchain
-//!
-//!
-
+use anyhow::Result;
 use clap::Parser;
 use std::fs;
+use toml;
+
+mod utils;
+use utils::Config;
+mod error;
+use error::IndexerError;
 
 /// An Indexer for the Osmosis Blockchain
 #[derive(Parser, Debug)]
@@ -18,8 +22,11 @@ struct Args {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     let args = Args::parse();
-    let config =
-        fs::read_to_string(args.config_path).expect("Something went wrong reading the file");
+    let config: Config = toml::from_str(
+        &fs::read_to_string(args.config_path).map_err(|_| IndexerError::ConfigFileNotFound)?,
+    )?;
+
+    Ok(())
 }

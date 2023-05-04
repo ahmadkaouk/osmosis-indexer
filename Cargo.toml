@@ -1,12 +1,13 @@
 [package]
-name = "sei-test"
+name    = "osmosis-indexer"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.71"
-clap = { version = "4.2.7", features = ["derive"] }
-serde = "1.0.160"
-tokio = { version = "1.28.0", features = ["full"] }
+anyhow    = "1.0.71"
+clap      = { version = "4.2.7", features = ["derive"] }
+serde     = { version = "1.0.160", features = ["derive"] }
+thiserror = "1.0.40"
+tokio     = { version = "1.28.0", features = ["full"] }
+toml      = "0.7.3"

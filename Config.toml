@@ -1,0 +1,5 @@
+db_url  = "postgresql://postgres:postgres@localhost:5432/etl_project"
+rpc_url = " https://rpc.cosmos.directory/osmosis"
+
+# Fetching interval in seconds
+fetch_interval = 30
