@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use sqlx::{migrate::MigrateDatabase, postgres::PgPoolOptions, PgPool, Postgres};
+use sqlx::{postgres::PgPoolOptions, PgPool};
 
 /// A wrapper around a [`PgPool`][sqlx::postgres::PgPool] that provides some
 /// convenience methods.
