@@ -8,6 +8,7 @@ edition = "2021"
 anyhow    = "1.0.71"
 clap      = { version = "4.2.7", features = ["derive"] }
 serde     = { version = "1.0.160", features = ["derive"] }
+sqlx      = { version = "0.6.3", features = ["postgres", "runtime-tokio-rustls"] }
 thiserror = "1.0.40"
 tokio     = { version = "1.28.0", features = ["full"] }
 toml      = "0.7.3"

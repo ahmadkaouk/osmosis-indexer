@@ -4,6 +4,7 @@ use clap::Parser;
 use std::fs;
 use toml;
 
+mod db;
 mod utils;
 use utils::Config;
 mod error;
@@ -28,5 +29,6 @@ async fn main() -> Result<()> {
         &fs::read_to_string(args.config_path).map_err(|_| IndexerError::ConfigFileNotFound)?,
     )?;
 
+    let db = db::DB::new(&config.db_url).await?;
     Ok(())
 }
