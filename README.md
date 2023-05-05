@@ -40,7 +40,7 @@ Replace the placeholders with the appropriate values for your setup, including t
 
 The indexer provides a command-line interface with several options for customization. The following is the help message:
 
-```
+```bash
 Usage: osmosis-indexer [OPTIONS]
 
 Options:
@@ -54,7 +54,7 @@ Options:
 
 1. Clone the repository:
 
-   ```
+   ```bash
    git clone https://github.com/yourusername/osmosis-blockchain-indexer.git
    cd osmosis-blockchain-indexer
    ```
@@ -62,10 +62,9 @@ Options:
 2. Set up the PostgreSQL database:
 
    - Using Docker:
-
      Create a `docker-compose.yml` file as described in the previous sections, and run:
 
-     ```
+     ```bash
      docker-compose up -d
      ```
 
@@ -75,7 +74,7 @@ Options:
 
 3. Build and run the indexer:
 
-   ```
+   ```bash
    cargo build --release
    ./target/release/osmosis-indexer --height 9479346
    ```
@@ -90,18 +89,18 @@ Here are some examples of how you might use the HTTP API:
 
 1. To get the blocks proposed by a validator, issue an HTTP GET request to `/blocks/:validator`:
 
-```bash
-curl http://127.0.0.1:3000/blocks/97AFE45395B74E784C88D45E5CCA2995019FAE08
-```
+    ```bash
+    curl http://127.0.0.1:3000/blocks/97AFE45395B74E784C88D45E5CCA2995019FAE08
+    ```
 
-This will return a JSON array of block heights where the specified validator has proposed a block.
+    This will return a JSON array of block heights where the specified validator has proposed a block.
 
 2. To get the total number of transactions in the last `N` blocks, issue an HTTP GET request to `/transactions/:last_blocks`:
 
-```bash
-curl http://127.0.0.1:3000/transactions/5
-```
+    ```bash
+    curl http://127.0.0.1:3000/transactions/5
+    ```
 
-This will return a JSON number representing the total number of transactions in the last 5 blocks.
+    This will return a JSON number representing the total number of transactions in the last 5 blocks.
 
 Remember that you can also directly query the PostgreSQL database for more advanced analytics and insights. The indexer stores the data in a well-structured schema, making it easy to write SQL queries to analyze the indexed data.
