@@ -1,4 +1,8 @@
-use crate::{data::BlockInfo, db::DB, utils::IndexerConfig};
+use crate::{
+    data::{BlockInfo, ValidatorInfo},
+    db::DB,
+    utils::IndexerConfig,
+};
 use anyhow::Result;
 use futures::{future::try_join_all, stream::FuturesUnordered};
 use std::{cmp::max, time::Duration};
@@ -39,22 +43,6 @@ impl Indexer {
         }
     }
 
-    async fn fetch_blocks(
-        rpc_client: HttpClient,
-        start_height: i64,
-        end_height: i64,
-    ) -> Result<Vec<BlockInfo>> {
-        let blocks = rpc_client
-            .blockchain(Height::try_from(start_height)?, end_height.try_into()?)
-            .await?
-            .block_metas
-            .into_iter()
-            .map(|meta| BlockInfo::from(meta))
-            .collect::<Vec<BlockInfo>>();
-
-        Ok(blocks)
-    }
-
     /// Fetch data from the blockchain and store it in the database
     pub async fn fetch_data(&mut self) -> Result<()> {
         let latest_height: i64 = self.client.latest_block().await?.block.header.height.into();
@@ -64,17 +52,41 @@ impl Indexer {
             .map(|chunk| {
                 let start_height = chunk[0];
                 let end_height = *chunk.last().unwrap();
-                let rpc_client = self.client.clone();
-                let db = self.db.clone();
-                tokio::spawn(async move {
-                    let blocks =
-                        Self::fetch_blocks(rpc_client.clone(), start_height, end_height).await?;
-                    db.store_blocks(&blocks).await?;
-                    Result::<(), anyhow::Error>::Ok(())
-                })
+                self.fetch_blocks(start_height, end_height);
             })
             .collect::<FuturesUnordered<_>>();
 
         Ok(())
+    }
+
+    /// Fetch blocks from the blockchain
+    fn fetch_blocks(&self, start_height: i64, end_height: i64) {
+        let client = self.client.clone();
+        let db = self.db.clone();
+        tokio::spawn(async move {
+            let blocks = client
+                .blockchain(Height::try_from(start_height)?, end_height.try_into()?)
+                .await?
+                .block_metas
+                .into_iter()
+                .map(|meta| BlockInfo::from(meta))
+                .collect::<Vec<BlockInfo>>();
+            db.store_blocks(&blocks).await?;
+            Result::<(), anyhow::Error>::Ok(())
+        });
+    }
+
+    /// Fetch Validator set from the blockchain at the given height
+    async fn fetch_validators(&self, height: i64) -> Result<Vec<ValidatorInfo>> {
+        let validators = self
+            .client
+            .validators(Height::try_from(height)?, tendermint_rpc::Paging::All)
+            .await?
+            .validators
+            .into_iter()
+            .map(|validator| ValidatorInfo::from_info(validator, height))
+            .collect::<Vec<ValidatorInfo>>();
+
+        Ok(validators)
     }
 }
