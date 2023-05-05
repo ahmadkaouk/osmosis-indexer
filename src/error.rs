@@ -1,4 +1,7 @@
-use axum::{response::{IntoResponse, Response}, http::StatusCode};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -17,9 +20,7 @@ impl IntoResponse for IndexerError {
             IndexerError::Sqlx(err) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response()
             }
-            _ => {
-                (StatusCode::INTERNAL_SERVER_ERROR, "Internal Error").into_response()
-            }
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Error").into_response(),
         }
     }
 }

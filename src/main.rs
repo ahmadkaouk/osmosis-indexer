@@ -42,7 +42,6 @@ async fn main() -> Result<()> {
     let db = db::DB::new(config.db).await?;
     let pool = db.pool.clone();
 
-
     // Start the indexer
     tokio::spawn({
         async move {
