@@ -1,3 +1,4 @@
+use axum::{response::{IntoResponse, Response}, http::StatusCode};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -6,4 +7,19 @@ pub enum IndexerError {
     ConfigFileNotFound,
     #[error("Invalid height {0}")]
     InvalidHeight(i64),
+    #[error("Sqlx error: {0}")]
+    Sqlx(#[from] sqlx::Error),
+}
+
+impl IntoResponse for IndexerError {
+    fn into_response(self) -> Response {
+        match self {
+            IndexerError::Sqlx(err) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response()
+            }
+            _ => {
+                (StatusCode::INTERNAL_SERVER_ERROR, "Internal Error").into_response()
+            }
+        }
+    }
 }

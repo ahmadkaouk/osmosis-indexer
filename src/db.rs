@@ -9,7 +9,7 @@ use sqlx::{postgres::PgPoolOptions, PgPool};
 /// convenience methods.
 #[derive(Clone)]
 pub struct DB {
-    pool: PgPool,
+    pub pool: PgPool,
 }
 
 impl DB {
@@ -37,10 +37,11 @@ impl DB {
         for block in blocks {
             sqlx::query!(
                 r#"
-                INSERT INTO blocks (block_height, time, num_txs, proposer_address)
-                VALUES ($1, $2, $3, $4)
+                INSERT INTO blocks (block_height, block_id, time, num_txs, proposer_address)
+                VALUES ($1, $2, $3, $4, $5)
                 "#,
                 block.height,
+                block.block_id,
                 block.time,
                 block.num_txs,
                 block.proposer_address,

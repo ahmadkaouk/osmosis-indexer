@@ -6,6 +6,7 @@ use clap::Parser;
 use std::fs;
 use toml;
 
+mod api;
 mod data;
 mod db;
 mod indexer;
@@ -39,8 +40,17 @@ async fn main() -> Result<()> {
     )?;
 
     let db = db::DB::new(config.db).await?;
+    let pool = db.pool.clone();
 
-    let mut indexer = indexer::Indexer::new(config.indexer, db)?;
-    indexer.run(args.height).await?;
-    Ok(())
+
+    // Start the indexer
+    tokio::spawn({
+        async move {
+            let mut indexer = indexer::Indexer::new(config.indexer, db)?;
+            indexer.run(args.height).await
+        }
+    });
+
+    // Start the HTTP server
+    api::serve(pool).await
 }

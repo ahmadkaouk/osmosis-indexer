@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS blocks (
     id SERIAL PRIMARY KEY,
+    block_id VARCHAR(255) NOT NULL,
     block_height BIGINT NOT NULL,
     block_size INTEGER,
     time VARCHAR(255),
