@@ -24,6 +24,7 @@ pub fn router() -> Router<PgPool, axum::body::Body> {
         .route("/transactions/:last_blocks", get(transactions))
 }
 
+/// Get the blocks proposed by a validator.
 async fn validator_blocks(
     State(db): State<PgPool>,
     Path(proposer_address): Path<String>,
