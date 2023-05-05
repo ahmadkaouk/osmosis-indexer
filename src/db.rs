@@ -79,6 +79,18 @@ impl DB {
         Ok(())
     }
 
+    /// get the latest block height from the database.
+    pub async fn get_latest_block_height(&self) -> Result<i64> {
+        let height = sqlx::query!("SELECT MAX(block_height) FROM blocks")
+            .fetch_one(&self.pool)
+            .await
+            .context("Failed to get latest block height")?
+            .max
+            .unwrap_or(0);
+
+        Ok(height)
+    }
+
     /// Run the database migrations.
     pub async fn run_migrations(&self) -> Result<()> {
         sqlx::migrate!("./migrations")

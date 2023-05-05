@@ -1,11 +1,7 @@
-use crate::{
-    data::{BlockInfo, ValidatorInfo},
-    db::DB,
-    utils::IndexerConfig,
-};
+use crate::{data::BlockInfo, db::DB, utils::IndexerConfig};
 use anyhow::Result;
-use futures::stream::FuturesOrdered;
-use std::time::Duration;
+use futures::{future::{join_all, try_join_all}, stream::FuturesUnordered};
+use std::{cmp::max, time::Duration};
 use tendermint::block::Height;
 use tendermint_rpc::{Client, HttpClient};
 use tokio::time::Interval;
@@ -34,7 +30,9 @@ impl Indexer {
 
     /// Run the indexer, starting from the given height
     pub async fn run(&mut self, height: i64) -> Result<()> {
-        self.current_height = height;
+        // Set the current height to the max of the given height and the latest height in the database
+        self.current_height = max(self.db.get_latest_block_height().await?, height);
+
         loop {
             self.fetch_interval.tick().await;
             self.fetch_data().await?;
@@ -45,7 +43,7 @@ impl Indexer {
     pub async fn fetch_data(&mut self) -> Result<()> {
         let latest_height: i64 = self.client.latest_block().await?.block.header.height.into();
 
-        let _ = (self.current_height..=latest_height)
+        let header_futures = (self.current_height..=latest_height)
             .step_by(20)
             .map(|height| {
                 let end_height = std::cmp::min(height + 19, latest_height);
@@ -92,7 +90,10 @@ impl Indexer {
                     Result::<()>::Ok(())
                 })
             })
-            .collect::<FuturesOrdered<_>>();
+            .collect::<FuturesUnordered<_>>();
+
+        // Wait for all futures to complete and handle any errors
+        try_join_all(header_futures).await?;
 
         Ok(())
     }
