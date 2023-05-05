@@ -3,7 +3,7 @@ use crate::{
     utils::DBConfig,
 };
 use anyhow::{Context, Result};
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use sqlx::{postgres::PgPoolOptions, query_builder::QueryBuilder, PgPool, Postgres};
 
 /// A wrapper around a [`PgPool`][sqlx::postgres::PgPool] that provides some
 /// convenience methods.
@@ -32,26 +32,19 @@ impl DB {
 
     /// Store a set of blocks in the database.
     pub async fn store_blocks(&self, blocks: &[BlockInfo]) -> Result<()> {
-        let mut tx = self.pool.begin().await?;
+        let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
+            "INSERT INTO blocks (block_height, block_id, time, num_txs, proposer_address)",
+        );
 
-        for block in blocks {
-            sqlx::query!(
-                r#"
-                INSERT INTO blocks (block_height, block_id, time, num_txs, proposer_address)
-                VALUES ($1, $2, $3, $4, $5)
-                "#,
-                block.height,
-                block.block_id,
-                block.time,
-                block.num_txs,
-                block.proposer_address,
-            )
-            .execute(&mut tx)
-            .await
-            .context("Failed to store block")?;
-        }
+        query_builder.push_values(blocks, |mut b, block| {
+            b.push_bind(block.height as i64)
+                .push_bind(block.block_id.as_str())
+                .push_bind(block.time.as_str())
+                .push_bind(block.num_txs as i64)
+                .push_bind(block.proposer_address.as_str());
+        });
 
-        tx.commit().await?;
+        query_builder.build().execute(&self.pool).await?;
 
         Ok(())
     }
