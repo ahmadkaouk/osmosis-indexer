@@ -4,7 +4,7 @@ use crate::{
     utils::IndexerConfig,
 };
 use anyhow::Result;
-use futures::{future::try_join_all, stream::FuturesUnordered};
+use futures::stream::FuturesUnordered;
 use std::{cmp::max, time::Duration};
 use tendermint::block::Height;
 use tendermint_rpc::{Client, HttpClient};
@@ -77,16 +77,19 @@ impl Indexer {
     }
 
     /// Fetch Validator set from the blockchain at the given height
-    async fn fetch_validators(&self, height: i64) -> Result<Vec<ValidatorInfo>> {
-        let validators = self
-            .client
-            .validators(Height::try_from(height)?, tendermint_rpc::Paging::All)
-            .await?
-            .validators
-            .into_iter()
-            .map(|validator| ValidatorInfo::from_info(validator, height))
-            .collect::<Vec<ValidatorInfo>>();
-
-        Ok(validators)
+    async fn fetch_validators(&self, height: i64) {
+        let client = self.client.clone();
+        let db = self.db.clone();
+        tokio::spawn(async move {
+            let validators = client
+                .validators(Height::try_from(height)?, tendermint_rpc::Paging::All)
+                .await?
+                .validators
+                .into_iter()
+                .map(|validator| ValidatorInfo::from_info(validator, height))
+                .collect::<Vec<ValidatorInfo>>();
+            db.store_validators(&validators).await?;
+            Result::<(), anyhow::Error>::Ok(())
+        });
     }
 }
