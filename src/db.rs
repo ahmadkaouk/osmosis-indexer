@@ -50,25 +50,21 @@ impl DB {
     }
 
     /// Store a set of validators in the database.
-    pub async fn store_validators(&self, validator: &[ValidatorInfo]) -> Result<()> {
-        let mut tx = self.pool.begin().await?;
+    pub async fn store_validators(&self, validators: &[ValidatorInfo]) -> Result<()> {
+        let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
+            "INSERT INTO validators (block_height, address, name, voting_power, proposer_priority)",
+        );
 
-        for validator in validator {
-            sqlx::query!(
-                r#"
-                INSERT INTO validators (address, voting_power, proposer_priority)
-                VALUES ($1, $2, $3)
-                "#,
-                validator.address,
-                validator.power as i64,
-                validator.proposer_priority,
-            )
-            .execute(&mut tx)
-            .await
-            .context("Failed to store validator")?;
-        }
+        query_builder.push_values(validators, |mut b, validator| {
+            let name = validator.name.to_owned().unwrap_or("".to_string());
+            b.push_bind(validator.block_height)
+                .push_bind(validator.address.as_str())
+                .push_bind(name)
+                .push_bind(validator.power as i64)
+                .push_bind(validator.proposer_priority);
+        });
 
-        tx.commit().await?;
+        query_builder.build().execute(&self.pool).await?;
 
         Ok(())
     }

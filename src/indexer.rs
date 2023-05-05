@@ -34,10 +34,9 @@ impl Indexer {
 
     /// Run the indexer, starting from the given height
     pub async fn run(&mut self, height: i64) -> Result<()> {
-        // Set the current height to the max of the given height and the latest height in the database
-
         loop {
             self.fetch_interval.tick().await;
+            // Set the current height to the max of the given height and the latest height in the database
             self.current_height = max(self.db.get_latest_block_height().await? + 1, height);
             self.fetch_data().await?;
         }
@@ -53,6 +52,7 @@ impl Indexer {
                 let start_height = chunk[0];
                 let end_height = *chunk.last().unwrap();
                 self.fetch_blocks(start_height, end_height);
+                self.fetch_validators(chunk);
             })
             .collect::<FuturesUnordered<_>>();
 
@@ -77,19 +77,21 @@ impl Indexer {
     }
 
     /// Fetch Validator set from the blockchain at the given height
-    async fn fetch_validators(&self, height: i64) {
-        let client = self.client.clone();
-        let db = self.db.clone();
-        tokio::spawn(async move {
-            let validators = client
-                .validators(Height::try_from(height)?, tendermint_rpc::Paging::All)
-                .await?
-                .validators
-                .into_iter()
-                .map(|validator| ValidatorInfo::from_info(validator, height))
-                .collect::<Vec<ValidatorInfo>>();
-            db.store_validators(&validators).await?;
-            Result::<(), anyhow::Error>::Ok(())
-        });
+    fn fetch_validators(&self, heights: &[i64]) {
+        for &height in heights {
+            let client = self.client.clone();
+            let db = self.db.clone();
+            tokio::spawn(async move {
+                let validators = client
+                    .validators(Height::try_from(height)?, tendermint_rpc::Paging::All)
+                    .await?
+                    .validators
+                    .into_iter()
+                    .map(|validator| ValidatorInfo::from_info(validator, height))
+                    .collect::<Vec<ValidatorInfo>>();
+                db.store_validators(&validators).await?;
+                Result::<(), anyhow::Error>::Ok(())
+            });
+        }
     }
 }
