@@ -1,9 +1,12 @@
 //! An Indexer for the Osmosis Blockchain
+//!
+#![feature(async_closure)]
 use anyhow::Result;
 use clap::Parser;
-use std::{fs, time::Duration};
+use std::fs;
 use toml;
 
+mod data;
 mod db;
 mod indexer;
 mod utils;
@@ -20,7 +23,7 @@ struct Args {
     config_path: String,
     /// The height to start indexing from
     #[arg(long, default_value = "9479346")]
-    height: u64,
+    height: i64,
 }
 
 #[tokio::main]
@@ -35,11 +38,9 @@ async fn main() -> Result<()> {
         &fs::read_to_string(args.config_path).map_err(|_| IndexerError::ConfigFileNotFound)?,
     )?;
 
-    let db = db::DB::new(&config.db_url).await?;
+    let db = db::DB::new(config.db).await?;
 
-    let mut indexer = indexer::Indexer::new(config.rpc_url, db)?;
-    indexer
-        .run(args.height, Duration::from_secs(config.fetch_interval))
-        .await?;
+    let mut indexer = indexer::Indexer::new(config.indexer, db)?;
+    indexer.run(args.height).await?;
     Ok(())
 }

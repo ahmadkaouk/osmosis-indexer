@@ -1,5 +1,8 @@
-db_url  = "postgresql://user:password@localhost:5432/indexes"
-rpc_url = " https://rpc.cosmos.directory/osmosis"
+[db]
+url = "postgresql://user:password@localhost:5432/indexes"
 
+
+[indexer]
+rpc_url = " https://rpc.cosmos.directory/osmosis"
 # Fetching interval in seconds
 fetch_interval = 30
