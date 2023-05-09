@@ -1,5 +1,5 @@
 use crate::{
-    data::{BlockInfo, ValidatorInfo},
+    data::{BlockInfo, PeerInfo, ValidatorInfo},
     db::DB,
     utils::IndexerConfig,
 };
@@ -53,6 +53,7 @@ impl Indexer {
                 let end_height = *chunk.last().unwrap();
                 self.fetch_blocks(start_height, end_height);
                 self.fetch_validators(chunk);
+                self.fetch_network_info(chunk);
             })
             .collect::<FuturesUnordered<_>>();
 
@@ -78,7 +79,7 @@ impl Indexer {
 
     /// Fetch Validator set from the blockchain at the given height
     fn fetch_validators(&self, heights: &[i64]) {
-        for &height in heights {
+        heights.iter().for_each(|&height| {
             let client = self.client.clone();
             let db = self.db.clone();
             tokio::spawn(async move {
@@ -92,6 +93,25 @@ impl Indexer {
                 db.store_validators(&validators).await?;
                 Result::<(), anyhow::Error>::Ok(())
             });
-        }
+        });
+    }
+
+    /// Fetch network info from the blockchain
+    fn fetch_network_info(&self, heights: &[i64]) {
+        heights.iter().for_each(|&height| {
+            let client = self.client.clone();
+            let db = self.db.clone();
+            tokio::spawn(async move {
+                let network_info = client
+                    .net_info()
+                    .await?
+                    .peers
+                    .into_iter()
+                    .map(|p| PeerInfo::from_info(p, height))
+                    .collect::<Vec<_>>();
+                db.store_network_infos(&network_info).await?;
+                Result::<(), anyhow::Error>::Ok(())
+            });
+        });
     }
 }

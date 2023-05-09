@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use tendermint::{block::Meta, validator};
+use tendermint_rpc::endpoint::net_info;
 
 #[derive(Deserialize, Debug)]
 pub struct BlockInfo {
@@ -59,6 +60,26 @@ impl ValidatorInfo {
             block_height,
             name: validator.name,
             proposer_priority: validator.proposer_priority.value(),
+        }
+    }
+}
+
+#[derive(Deserialize, Debug)]
+pub struct PeerInfo {
+    pub block_height: i64,
+    pub node_id: String,
+    pub remote_ip: String,
+    pub peer_score: i64,
+}
+
+impl PeerInfo {
+    pub fn from_info(peer: net_info::PeerInfo, block_height: i64) -> Self {
+        PeerInfo {
+            block_height,
+            node_id: peer.node_info.id.to_string(),
+            remote_ip: peer.remote_ip.to_string(),
+            // TODO: How to compute peer score?
+            peer_score: 0,
         }
     }
 }

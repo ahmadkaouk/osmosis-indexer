@@ -19,10 +19,11 @@ CREATE TABLE IF NOT EXISTS validators (
     UNIQUE (block_height, address)
 );
 
-CREATE TABLE IF NOT EXISTS network_info (
+CREATE TABLE IF NOT EXISTS peers (
     id SERIAL PRIMARY KEY,
     block_height BIGINT NOT NULL,
-    peer_id VARCHAR(255) NOT NULL,
+    node_id VARCHAR(255) NOT NULL,
+    remote_ip VARCHAR(255),
     peer_score INTEGER,
-    UNIQUE (block_height, peer_id)
+    UNIQUE (block_height, node_id)
 );

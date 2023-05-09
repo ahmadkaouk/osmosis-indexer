@@ -1,5 +1,5 @@
 use crate::{
-    data::{BlockInfo, ValidatorInfo},
+    data::{BlockInfo, PeerInfo, ValidatorInfo},
     utils::DBConfig,
 };
 use anyhow::{Context, Result};
@@ -69,7 +69,24 @@ impl DB {
         Ok(())
     }
 
-    /// get the latest block height from the database.
+    /// Store network parameters in the database.
+    pub async fn store_network_infos(&self, peers: &[PeerInfo]) -> Result<()> {
+        let mut query_builder: QueryBuilder<Postgres> =
+            QueryBuilder::new("INSERT INTO peers (block_height, node_id, remote_ip, peer_score)");
+
+        query_builder.push_values(peers, |mut p, peer| {
+            p.push_bind(peer.block_height)
+                .push_bind(peer.node_id.as_str())
+                .push_bind(peer.remote_ip.as_str())
+                .push_bind(peer.peer_score);
+        });
+
+        query_builder.build().execute(&self.pool).await?;
+
+        Ok(())
+    }
+
+    /// Get the latest block height from the database.
     pub async fn get_latest_block_height(&self) -> Result<i64> {
         let height = sqlx::query!("SELECT MAX(block_height) FROM blocks")
             .fetch_one(&self.pool)
